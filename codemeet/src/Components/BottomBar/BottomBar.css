@@ -1,0 +1,62 @@
+.contact-links {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0);
+    z-index: 1000;
+}
+
+.contact-links a {
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.contact-links a:hover {
+    transform: translateY(-3px);
+}
+
+.contact-links .icon {
+    /* color: #4d4d4e; */
+    color: white;
+    transition: color 0.3s ease;
+}
+
+.contact-links a:hover .icon {
+    color: #3498db;
+}
+
+.contact-links .email {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    color: #bbb;
+    padding: 5px 10px;
+    border-radius: 15px;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.contact-links .email:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .contact-links {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .contact-links .icon {
+        font-size: 2.5rem;
+    }
+
+    .contact-links .email {
+        font-size: 0.8rem;
+    }
+}
