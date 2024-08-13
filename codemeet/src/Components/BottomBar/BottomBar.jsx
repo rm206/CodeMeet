@@ -9,6 +9,7 @@ import "./BottomBar.css"
 export default function BottomBar() {
     return (
         <div className="contact-links">
+            <span className="email"><code>Reach Out!</code></span>
             <a href="https://github.com/rm206" target="_blank" rel="noopener noreferrer">
                 <FontAwesomeIcon icon={faGithub} className="icon" size="3x" />
             </a>

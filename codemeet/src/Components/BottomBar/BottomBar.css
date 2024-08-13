@@ -1,6 +1,6 @@
 .contact-links {
-    position: fixed;
-    bottom: 20px;
+    position: sticky;
+    bottom: 0;
     left: 0;
     right: 0;
     display: flex;
@@ -8,7 +8,8 @@
     align-items: center;
     gap: 20px;
     padding: 10px;
-    background-color: rgba(255, 255, 255, 0);
+    background-color: rgb(18, 17, 17);
+    /* Add a semi-transparent background */
     z-index: 1000;
 }
 

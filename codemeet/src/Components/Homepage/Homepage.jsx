@@ -4,6 +4,8 @@ import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
 
 import './Homepage.css';
 
+import BottomBar from '../BottomBar/BottomBar';
+
 export default function HomePage() {
     const [roomName, setRoomName] = useState('');
     const navigate = useNavigate();
@@ -27,21 +29,24 @@ export default function HomePage() {
     };
 
     return (
-        <div className="homepage">
-            <h1>CodeMeet</h1>
-            <div className="under-development">Under Development</div>
-            <h3> The platform to meet and code together - privately.</h3>
-            <button onClick={createNewRoom}>Create New Room</button>
-            <div className="or-text">or</div>
-            <form onSubmit={joinExistingRoom}>
-                <input
-                    type="text"
-                    value={roomName}
-                    onChange={(e) => setRoomName(e.target.value)}
-                    placeholder="Enter existing room name"
-                />
-                <button type="submit">Join Existing Room</button>
-            </form>
-        </div>
+        <>
+            <div className="homepage">
+                <h1>CodeMeet</h1>
+                <div className="under-development">Under Development</div>
+                <h3> The platform to meet and code together - privately.</h3>
+                <button onClick={createNewRoom}>Create New Room</button>
+                <div className="or-text">or</div>
+                <form onSubmit={joinExistingRoom}>
+                    <input
+                        type="text"
+                        value={roomName}
+                        onChange={(e) => setRoomName(e.target.value)}
+                        placeholder="Enter existing room name"
+                    />
+                    <button type="submit">Join Existing Room</button>
+                </form>
+            </div>
+            <BottomBar />
+        </>
     );
 }
