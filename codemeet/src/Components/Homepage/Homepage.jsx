@@ -11,14 +11,17 @@ export default function HomePage() {
     const navigate = useNavigate();
 
     const createNewRoom = () => {
-        const newRoomId = uuidv4();
+        const newRoomId = uuidv4() + '&&' + "-";
         navigate(`/room/${newRoomId}`);
     };
 
     const joinExistingRoom = (e) => {
         e.preventDefault();
+
+        const [meetingName, peerID] = roomName.split('&&');
+
         if (roomName) {
-            if (uuidValidate(roomName)) {
+            if (uuidValidate(meetingName)) {
                 navigate(`/room/${roomName}`);
             } else {
                 alert("Please enter a valid room ID (UUID format)!");
@@ -33,7 +36,7 @@ export default function HomePage() {
             <div className="homepage">
                 <h1>CodeMeet</h1>
                 <div className="under-development">Under Development</div>
-                <h3> The platform to meet and code together - privately.</h3>
+                <h3> The platform to meet and pair program - privately.</h3>
                 <button onClick={createNewRoom}>Create New Room</button>
                 <div className="or-text">or</div>
                 <form onSubmit={joinExistingRoom}>

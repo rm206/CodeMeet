@@ -4,11 +4,15 @@ import { UnControlled as CodeMirrorEditor } from "react-codemirror2";
 import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
 import { CodemirrorBinding } from "y-codemirror";
+import Peer from "peerjs";
+
 import "./Editor.css";
 import "./EditorAddons";
 
 export default function Editor() {
     const { roomName } = useParams();
+
+    const [meetingName, remotepeerID] = roomName.split('&&');
 
     const [language, setLanguage] = useState("python");
     const [theme, setTheme] = useState("monokai");
@@ -17,26 +21,35 @@ export default function Editor() {
     const [fontSize, setFontSize] = useState("medium");
     const [showCopiedMessage, setShowCopiedMessage] = useState(false);
 
+    const [chatMessages, setChatMessages] = useState([]);
+    const [inputMessage, setInputMessage] = useState("");
+    const [userName, setUserName] = useState("");
+    const [this_peer, setPeer] = useState(null);
+    const [connection, setConnection] = useState(null);
+    const [this_peerId, setPeerId] = useState('');
+
 
     useEffect(() => {
+        const generatedUserName = 'Anonymous' + Math.floor(Math.random() * 16777215);
+        setUserName(generatedUserName);
+
         if (editorRef.current) {
             const ydoc = new Y.Doc();
 
-            const provider = new WebrtcProvider(roomName, ydoc, {
-                signaling: ['ws://localhost:4444', 'wss://signaling.yjs.dev']
+            const provider = new WebrtcProvider(meetingName, ydoc, {
+                signaling: [process.env.REACT_APP_SIGNALING]
             });
 
 
             const yText = ydoc.getText('codemirror');
             const yUndoManager = new Y.UndoManager(yText);
 
-            const userName = 'Anonymous' + Math.floor(Math.random() * 16777215);
             const userColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
 
             const awareness = provider.awareness;
 
             awareness.setLocalStateField('user', {
-                name: userName,
+                name: generatedUserName,
                 color: userColor
             });
 
@@ -44,13 +57,41 @@ export default function Editor() {
                 yUndoManager
             });
 
+            console.log('Connected to room: ' + meetingName);
+
+            const peer = new Peer();
+
+            peer.on('open', (id) => {
+                setPeerId(id);
+            });
+
+            peer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    setChatMessages((prevMessages) => [...prevMessages, { text: data, received: true }]);
+                });
+                setConnection(conn);
+            });
+
+            setPeer(peer);
+
+            if (remotepeerID !== "-" && this_peer) {
+                const conn = this_peer.connect(remotepeerID);
+                conn.on('open', () => {
+                    conn.on('data', (data) => {
+                        setChatMessages((prevMessages) => [...prevMessages, { text: data, received: true }]);
+                    });
+                    setConnection(conn);
+                });
+            }
+
             return () => {
                 binding.destroy();
                 provider.disconnect();
                 ydoc.destroy();
+                peer.destroy();
             };
         }
-    }, []);
+    }, [roomName]);
 
     const handleEditorDidMount = (editor) => {
         editorRef.current = editor;
@@ -78,7 +119,7 @@ export default function Editor() {
     };
 
     const copyLinkToClipboard = () => {
-        navigator.clipboard.writeText(window.location.href)
+        navigator.clipboard.writeText(meetingName + "&&" + this_peer.id)
             .then(() => {
                 setShowCopiedMessage(true);
                 setTimeout(() => setShowCopiedMessage(false), 2000); // Hide message after 2 seconds
@@ -87,6 +128,15 @@ export default function Editor() {
                 console.error('Failed to copy: ', err);
             });
     };
+
+    const sendMessage = () => {
+        if (connection && inputMessage) {
+            connection.send(inputMessage);
+            setChatMessages((prevMessages) => [...prevMessages, { text: inputMessage, received: false }]);
+            setInputMessage('');
+        }
+    };
+
 
     return (
         <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -150,7 +200,7 @@ export default function Editor() {
                     </label>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         <button onClick={copyLinkToClipboard} className="copy-link-button">
-                            Copy Link
+                            Copy Room ID
                         </button>
                         <span className={`link-copied-message ${showCopiedMessage ? 'show' : ''}`}>
                             Link copied!
@@ -159,31 +209,54 @@ export default function Editor() {
                 </div>
             </div>
 
-            <div className="editor-content" style={{ flex: 1 }}>
-                <CodeMirrorEditor
-                    onChange={(editor, data, value) => {
-                        // Handle changes if needed
-                        setCode(value);
-                    }}
-                    options={{
-                        mode: language,
-                        theme: theme,
-                        lineWrapping: true,
-                        smartIndent: true,
-                        lineNumbers: true,
-                        foldGutter: true,
-                        tabSize: 2,
-                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-                        autoCloseTags: true,
-                        matchBrackets: true,
-                        autoCloseBrackets: true,
-                        extraKeys: {
-                            "Ctrl-Space": "autocomplete",
-                        },
-                    }}
-                    editorDidMount={handleEditorDidMount}
-                />
+            <div className="main-content">
+                <div className="editor-content">
+                    <CodeMirrorEditor
+                        onChange={(editor, data, value) => {
+                            setCode(value);
+                        }}
+                        options={{
+                            mode: language,
+                            theme: theme,
+                            lineWrapping: true,
+                            smartIndent: true,
+                            lineNumbers: true,
+                            foldGutter: true,
+                            tabSize: 2,
+                            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+                            autoCloseTags: true,
+                            matchBrackets: true,
+                            autoCloseBrackets: true,
+                            extraKeys: {
+                                "Ctrl-Space": "autocomplete",
+                            },
+                        }}
+                        editorDidMount={handleEditorDidMount}
+                    />
+                </div>
+
+                <div className="chat-window">
+                    <div className="chat-messages">
+                        {chatMessages.map((msg, index) => (
+                            <div key={index} className="chat-message">
+                                <strong>{msg.user}:</strong> {msg.message}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="chat-input">
+                        <input
+                            type="text"
+                            value={inputMessage}
+                            onChange={(e) => setInputMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                            placeholder="Type a message..."
+                        />
+                        <button onClick={sendMessage}>Send</button>
+                    </div>
+                </div>
+
             </div>
+
         </div >
     );
 }
